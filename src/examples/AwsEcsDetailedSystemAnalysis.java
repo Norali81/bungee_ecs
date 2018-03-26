@@ -29,7 +29,7 @@ public class AwsEcsDetailedSystemAnalysis {
     JMeterController jMeter = new JMeterController(jmeterPropertiesFile);
     Request request = Request.load(requestPropertiesFile);
     Host host = Host.load(hostPropertiesFile);
-    AwsEcsService EcsService = new AwsEcsService("HelloWorld", "TestService");
+    AwsEcsService EcsService = new AwsEcsService("BungeeCluster", "BungeeService");
     AwsEcsManagement cloudManagement = new AwsEcsManagement(EcsService);
     
     //SystemAnalysis analysis = new SimpleSystemAnalysis(jMeter);

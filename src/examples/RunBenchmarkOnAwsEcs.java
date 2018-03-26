@@ -9,7 +9,7 @@ import tools.descartes.bungee.utils.FileUtility;
 public class RunBenchmarkOnAwsEcs {
 
   private static File fileLocation = FileUtility.FILE_LOCATION;
-  private static AwsEcsService EcsService = new AwsEcsService("HelloWorld", "TestService");
+  private static AwsEcsService EcsService = new AwsEcsService("BungeeCluster", "BungeeService");
   private static AwsEcsManagement cloud = new AwsEcsManagement(EcsService);
 
   public static void main(String[] args) {

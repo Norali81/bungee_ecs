@@ -1,4 +1,4 @@
-package examples;
+package tools.descartes.bungee.cloud.aws.ecs.services;
 
 import java.util.Collection;
 import com.amazonaws.services.ec2.AmazonEC2;
@@ -7,9 +7,16 @@ import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupIngressRequest;
 import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupIngressResult;
 import com.amazonaws.services.ec2.model.CreateSecurityGroupRequest;
 import com.amazonaws.services.ec2.model.CreateSecurityGroupResult;
+import com.amazonaws.services.ec2.model.DescribeSecurityGroupsRequest;
 import com.amazonaws.services.ec2.model.DescribeVpcsRequest;
 import com.amazonaws.services.ec2.model.Filter;
+import com.amazonaws.services.ec2.model.IamInstanceProfileSpecification;
+import com.amazonaws.services.ec2.model.ResourceType;
+import com.amazonaws.services.ec2.model.RunInstancesRequest;
+import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.amazonaws.services.ec2.model.SecurityGroup;
+import com.amazonaws.services.ec2.model.Tag;
+import com.amazonaws.services.ec2.model.TagSpecification;
 import com.amazonaws.services.ecs.AmazonECS;
 import com.amazonaws.services.ecs.AmazonECSAsyncClientBuilder;
 import com.amazonaws.services.ecs.model.ContainerDefinition;
@@ -32,6 +39,7 @@ import com.amazonaws.services.elasticloadbalancingv2.model.CreateLoadBalancerReq
 import com.amazonaws.services.elasticloadbalancingv2.model.CreateLoadBalancerResult;
 import com.amazonaws.services.elasticloadbalancingv2.model.CreateTargetGroupRequest;
 import com.amazonaws.services.elasticloadbalancingv2.model.CreateTargetGroupResult;
+import com.amazonaws.services.elasticloadbalancingv2.model.DescribeTargetGroupsRequest;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClient;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
@@ -53,6 +61,7 @@ public class Setup {
   private String targetGroupArn;
   private String clusterName = "BungeeCluster";
   private String serviceName = "BungeeService";
+  private String targetGroupName = "TargetGroupBungee";
   
   private AmazonECS ecs = AmazonECSAsyncClientBuilder.standard().build();
   private AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().build();
@@ -64,9 +73,6 @@ public class Setup {
     super();
   }
 
-  /* Create 2 security groups. One for the instances and one for the load balancer */
-  // Security group instances: open inbound ports 80, 8080, 32768 - 65535 and 22
-  // Security group load balancer: open inbound ports 80, 8080 and 22
   
   private CreateSecurityGroupResult createSecurityGroup(String groupName, String description) {
     CreateSecurityGroupRequest request = new CreateSecurityGroupRequest()
@@ -77,7 +83,9 @@ public class Setup {
     return result;
   }
   
+  //TODO: Refactor the two functions to create security groups to be one
   public void createInstancesSecurityGroup() {
+    System.out.println("Creating security group for instances");
     this.instancesSecurityGroupId = 
         createSecurityGroup(instancesSecurityGroupName, "Security Group for Bungee VM instances")
         .getGroupId();
@@ -102,6 +110,8 @@ public class Setup {
   }
   
   public void createLoadBalancerSecurityGroup() {
+    
+    System.out.println("Creating security group for load balancer");
     this.loadBalancerSecurityGroupId = 
         createSecurityGroup(loadBalancerSecurityGroupName, "Security Group for Bungee load balancer").getGroupId();
     
@@ -110,6 +120,7 @@ public class Setup {
         .withIpProtocol("TCP")
         .withGroupName(this.loadBalancerSecurityGroupName);
     
+    System.out.println("Authorizing ingress ports");
     ec2.authorizeSecurityGroupIngress(request);
     
     
@@ -144,41 +155,22 @@ public class Setup {
       return result;
   }
   
-  /*// TODO Create a role called ecsServiceRole
-   This doesn't work. Remove or fix
-
   
-  public AttachRolePolicyResult CreateIAMRoles(){
-    CreateRoleRequest request = new CreateRoleRequest()
-        .withRoleName("BungeeEcsServicerole")
-        .withDescription("Role for the ECS Service")
-        .withAssumeRolePolicyDocument("");
-    
-    CreateRoleResult result = iam.createRole(request);
-    System.out.println(result.toString());
-    
-    AttachRolePolicyRequest policyReq = new AttachRolePolicyRequest()
-        .withRoleName("BungeeEcsServicerole")
-        .withPolicyArn("arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole");
-    AttachRolePolicyResult policyRslt = iam.attachRolePolicy(policyReq);
-    return policyRslt;
-    
-  }*/
-  
-  
-  public void createApplicationLoadBalancer(String subnet1, String subnet2) {
-    createLoadBalancer(subnet1, subnet2);
+  public void createApplicationLoadBalancer(String subnet1, String subnet2, String subnet3) {
+    createLoadBalancer(subnet1, subnet2, subnet3);
     createTargetGroup();
     createListener();
   }
   
   // TODO Create a LoadBalancer
-  private CreateLoadBalancerResult createLoadBalancer(String subnet1, String subnet2) {
+  private CreateLoadBalancerResult createLoadBalancer(String subnet1, String subnet2, String subnet3) {
     CreateLoadBalancerRequest request = new CreateLoadBalancerRequest()
         .withName(this.loadBalancerName)
-        .withSecurityGroups(this.loadBalancerSecurityGroupId)
-        .withSubnets(subnet1, subnet2);
+        .withSecurityGroups(ec2.describeSecurityGroups(new DescribeSecurityGroupsRequest()
+            .withGroupNames(this.loadBalancerSecurityGroupName)).getSecurityGroups().get(0).getGroupId().toString())
+        .withSubnets(subnet1, subnet2, subnet3);
     
+    System.out.println("Creating load balancer");
     CreateLoadBalancerResult result  = elb.createLoadBalancer(request);
     this.loadBalancerArn = result.getLoadBalancers().get(0).getLoadBalancerArn();
     return result;
@@ -194,14 +186,17 @@ public class Setup {
     String defaultVpcId = ec2.describeVpcs(vpcReq).getVpcs().get(0).getVpcId().toString();
     
     CreateTargetGroupRequest request = new CreateTargetGroupRequest()
-        .withHealthCheckIntervalSeconds(5)
+        .withHealthCheckIntervalSeconds(50)
         .withHealthCheckPath("/?size=1")
-        .withHealthCheckTimeoutSeconds(2)
+        .withHealthCheckTimeoutSeconds(30)
+        .withUnhealthyThresholdCount(10)
+        .withHealthyThresholdCount(2)
         .withPort(8080)
         .withProtocol("HTTP")
-        .withName("TargetGroupBungee")
+        .withName(this.targetGroupName)
         .withVpcId(defaultVpcId);
     
+    System.out.println("Creating target group");
     CreateTargetGroupResult result = this.elb.createTargetGroup(request);
     this.targetGroupArn = result.getTargetGroups().get(0).getTargetGroupArn();
     return result;
@@ -215,7 +210,11 @@ public class Setup {
         .withPort(8080).withProtocol("HTTP")
         .withDefaultActions(new Action()
             .withType(ActionTypeEnum.Forward)
-            .withTargetGroupArn(this.targetGroupArn));
+            .withTargetGroupArn(elb.describeTargetGroups(new DescribeTargetGroupsRequest()
+                .withNames(this.targetGroupName))
+                .getTargetGroups().get(0)
+                .getTargetGroupArn()));
+    System.out.println("Creating listener");
     CreateListenerResult result = elb.createListener(request);
     return result;
   }
@@ -223,14 +222,10 @@ public class Setup {
   /* Create a service called bungeeService. Use public docker container and test */
   
   public CreateServiceResult createEcsService(String ecsServiceRoleArn, int desiredCount, int maximumPercent,
-      int minimumHealthyPercent) {
-
-    if (this.targetGroupArn == null) {
-      System.out.println("No target group arn defined. Run createApplicationLoadBalancer before createEcsService");
-      System.exit(0);
-    }    
+      int minimumHealthyPercent, String image) {
+ 
     ContainerDefinition container = new ContainerDefinition()
-        .withImage("bungee")
+        .withImage(image) // "095867673188.dkr.ecr.eu-west-1.amazonaws.com/bungee"
         .withName(this.containerName)
         .withCpu(400)
         .withPortMappings(new PortMapping().withHostPort(0).withContainerPort(8080));
@@ -254,32 +249,54 @@ public class Setup {
         .withLoadBalancers(new LoadBalancer()
             .withContainerName(this.containerName)
             .withContainerPort(8080)
-            .withTargetGroupArn(this.targetGroupArn)
+           //.withTargetGroupArn(this.targetGroupArn)
+            .withTargetGroupArn(elb.describeTargetGroups(new DescribeTargetGroupsRequest()
+                .withNames(this.targetGroupName))
+                .getTargetGroups().get(0)
+                .getTargetGroupArn())
             //.withLoadBalancerName(this.loadBalancerName)
             );
+    System.out.println("Creating service");
     CreateServiceResult result = this.ecs.createService(request);
     return result;
   }
 
+ 
   
-  //TODO
-  public void createTasks(int numTasks) {
-    
+  public void createInstances(int numInstances, String instanceType, String keyPair,
+      String userData, String imageID, String iamInstanceProfile) {
+
+    for (int i = 1; i <= numInstances; i++) {
+
+      System.out.println("Creating instance " + i);
+      RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
+
+      System.out.println(ec2
+          .describeSecurityGroups(
+              new DescribeSecurityGroupsRequest().withGroupNames(this.instancesSecurityGroupName))
+          .getSecurityGroups()
+          .get(0)
+          .getGroupId()
+          .toString());
+
+      runInstancesRequest.withImageId(imageID) // ami-0693ed7f ECS optimized image for eu-west-1
+          .withInstanceType(instanceType)
+          .withMinCount(1)
+          .withMaxCount(1)
+          .withKeyName(keyPair)
+          .withSecurityGroups(this.instancesSecurityGroupName)
+          .withTagSpecifications(new TagSpecification()
+              .withTags(new Tag().withValue("BungeeServiceInstance")
+                  .withKey("Name"))
+              .withResourceType(ResourceType.Instance))
+          .withIamInstanceProfile(new IamInstanceProfileSpecification().withName(iamInstanceProfile) // ecsInstanceRole
+          )
+          .withUserData(userData);
+      RunInstancesResult result = this.ec2.runInstances(runInstancesRequest);
+      System.out.println(result.toString());
+    }
   }
-  
-  // TODO
-  public void createInstances(int numInstances) {
-    
-  }
-  
-  // TODO
-  public void terminateAllInstances() {
-    
-  }
-  /* Write function that creates X tasks */
-  
-  /* Write function that creates X instances */ 
-  
-  /* Write tear down function that terminates the instances*/
+
+  // TODO: Create getters and setters if needed
   
 }
