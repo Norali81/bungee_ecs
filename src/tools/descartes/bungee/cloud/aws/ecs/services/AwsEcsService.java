@@ -33,16 +33,6 @@ public class AwsEcsService {
   }
   
  
-  
-  /*
-   * System.out.println("Array lenght" + describeResult.getServices().size());
-    System.out.println("Status: " + describeResult.getServices().get(0).getStatus());
-    System.out.println("ServiceName: " + describeResult.getServices().get(0).getServiceName());
-    System.out.println("RunningCount: " + describeResult.getServices().get(0).getRunningCount());
-    System.out.println("PendingCount: " + describeResult.getServices().get(0).getPendingCount());
-    System.out.println("DesiredCount: " + describeResult.getServices().get(0).getDesiredCount());
-    System.out.println("GetEvents: " + describeResult.getServices().get(0).getEvents());
-   */
   public int getDesiredCount() {
     DescribeServicesResult result = describeEcsService();
     if (result.getServices().size() > 1) {

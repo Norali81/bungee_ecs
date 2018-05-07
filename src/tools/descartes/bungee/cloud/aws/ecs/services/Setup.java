@@ -73,7 +73,7 @@ public class Setup {
     super();
   }
 
-  
+  // create security group
   private CreateSecurityGroupResult createSecurityGroup(String groupName, String description) {
     CreateSecurityGroupRequest request = new CreateSecurityGroupRequest()
         .withGroupName(groupName)
@@ -83,12 +83,14 @@ public class Setup {
     return result;
   }
   
-  //TODO: Refactor the two functions to create security groups to be one
+  // create security group for instances
   public void createInstancesSecurityGroup() {
     System.out.println("Creating security group for instances");
+    
     this.instancesSecurityGroupId = 
         createSecurityGroup(instancesSecurityGroupName, "Security Group for Bungee VM instances")
         .getGroupId();
+    
     AuthorizeSecurityGroupIngressRequest request = new AuthorizeSecurityGroupIngressRequest()
         .withFromPort(32768).withToPort(65535).withCidrIp("0.0.0.0/0")
         .withIpProtocol("TCP")
@@ -109,6 +111,7 @@ public class Setup {
     ec2.authorizeSecurityGroupIngress(request);
   }
   
+  // create security group for load balancer
   public void createLoadBalancerSecurityGroup() {
     
     System.out.println("Creating security group for load balancer");
@@ -138,15 +141,9 @@ public class Setup {
     
     ec2.authorizeSecurityGroupIngress(request);
   }
-  
- 
-  
-  /* Create key pair */ 
-  // TODO: see if this is needed. Probably not
-  
 
   
-  /* Create a cluster called bungeeCluster */
+  // Create a cluster called bungeeCluster 
   
   public CreateClusterResult createCluster() {
       CreateClusterRequest request = new CreateClusterRequest().withClusterName(clusterName);
@@ -156,13 +153,14 @@ public class Setup {
   }
   
   
+  // Call function to create application load balancer 
   public void createApplicationLoadBalancer(String subnet1, String subnet2, String subnet3) {
     createLoadBalancer(subnet1, subnet2, subnet3);
     createTargetGroup();
     createListener();
   }
   
-  // TODO Create a LoadBalancer
+  // function that creates an application load balancer
   private CreateLoadBalancerResult createLoadBalancer(String subnet1, String subnet2, String subnet3) {
     CreateLoadBalancerRequest request = new CreateLoadBalancerRequest()
         .withName(this.loadBalancerName)
@@ -178,7 +176,7 @@ public class Setup {
   }
  
   
-  // TODO Create a LoadBalancer target group
+  // Create a LoadBalancer target group
   
   private CreateTargetGroupResult createTargetGroup() {
     
@@ -203,7 +201,7 @@ public class Setup {
     
   }
   
-  // create listener
+  // Create a listener
   public CreateListenerResult createListener() {
     CreateListenerRequest request = new CreateListenerRequest()
         .withLoadBalancerArn(this.loadBalancerArn)
@@ -219,27 +217,31 @@ public class Setup {
     return result;
   }
   
-  /* Create a service called bungeeService. Use public docker container and test */
+  /* Create a service called bungeeService */
   
   public CreateServiceResult createEcsService(String ecsServiceRoleArn, int desiredCount, int maximumPercent,
       int minimumHealthyPercent, String image) {
  
+    // Create a container definition
     ContainerDefinition container = new ContainerDefinition()
         .withImage(image) // "095867673188.dkr.ecr.eu-west-1.amazonaws.com/bungee"
         .withName(this.containerName)
         .withCpu(400)
         .withPortMappings(new PortMapping().withHostPort(0).withContainerPort(8080));
+    
+    // register task definition
     RegisterTaskDefinitionRequest taskreq =
         new RegisterTaskDefinitionRequest().withContainerDefinitions(container)
             .withFamily("BungeeTaskDefinitionFamily")
-            .withCpu("400")
-            .withMemory("400");
+            .withCpu("450")
+            .withMemory("450");
 
     RegisterTaskDefinitionResult rslt = ecs.registerTaskDefinition(taskreq);
 
     DeploymentConfiguration conf = new DeploymentConfiguration().withMaximumPercent(maximumPercent)
         .withMinimumHealthyPercent(minimumHealthyPercent);
     
+    // create a service
     CreateServiceRequest request = new CreateServiceRequest().withDesiredCount(desiredCount)
         .withCluster(this.clusterName)
         .withServiceName(this.serviceName)
@@ -249,12 +251,10 @@ public class Setup {
         .withLoadBalancers(new LoadBalancer()
             .withContainerName(this.containerName)
             .withContainerPort(8080)
-           //.withTargetGroupArn(this.targetGroupArn)
             .withTargetGroupArn(elb.describeTargetGroups(new DescribeTargetGroupsRequest()
                 .withNames(this.targetGroupName))
                 .getTargetGroups().get(0)
                 .getTargetGroupArn())
-            //.withLoadBalancerName(this.loadBalancerName)
             );
     System.out.println("Creating service");
     CreateServiceResult result = this.ecs.createService(request);
@@ -262,7 +262,7 @@ public class Setup {
   }
 
  
-  
+  // create desired number of instances 
   public void createInstances(int numInstances, String instanceType, String keyPair,
       String userData, String imageID, String iamInstanceProfile) {
 
@@ -295,8 +295,5 @@ public class Setup {
       RunInstancesResult result = this.ec2.runInstances(runInstancesRequest);
       System.out.println(result.toString());
     }
-  }
-
-  // TODO: Create getters and setters if needed
-  
+  }  
 }

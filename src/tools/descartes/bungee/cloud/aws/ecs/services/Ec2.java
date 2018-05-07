@@ -17,7 +17,7 @@ public class Ec2 {
   private AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().build();
 
   public Ec2() {
-    // TODO Auto-generated constructor stub
+    
   }
 
 
