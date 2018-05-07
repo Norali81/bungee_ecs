@@ -1,0 +1,12 @@
+#!/bin/sh
+
+
+FILE="/etc/ecs/ecs.config"
+
+echo "ECS_CLUSTER=BungeeCluster" > $FILE
+
+sudo yum -y erase ntp*
+
+sudo yum -y install chrony
+
+sudo service chronyd start

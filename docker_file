@@ -1,0 +1,10 @@
+FROM ubuntu:16.04
+
+RUN apt-get update -y
+RUN apt-get install default-jre -y
+
+# copy jar file into docker
+COPY SimpleHttp.jar ~/
+
+# execute the jar file
+CMD ["java" , "-jar" , "~/SimpleHttp.jar"]
