@@ -1,4 +1,4 @@
-#BUNGEE ECS extension - Installation and setup
+# BUNGEE ECS extension - Installation and setup
 
 ## Load driver
 
@@ -19,7 +19,7 @@
  * Store the private key (.pem) in your ~/.ssh directory. This will only be used in case you have to ssh into one of your EC2 instances for troubleshooting. 
  * Take note of the name of this newly created key. 
 
-####Create AWS IAM roles
+#### Create AWS IAM roles
 Create the following roles (instructions [here](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-service.html) here):
 
 Role name | Policy
