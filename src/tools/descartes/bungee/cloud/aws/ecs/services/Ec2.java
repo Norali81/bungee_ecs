@@ -11,17 +11,36 @@ import com.amazonaws.services.ec2.model.TagSpecification;
 import com.amazonaws.services.ec2.model.ResourceType;
 
 
-
+/**
+ * Contains an AmazonEC2ClientBuilder. 
+ * The purpose of the class is to hide the complexity of using the clientBuilder
+ * And allowing operations on the client builder. 
+ * 
+ * @author nora
+ *
+ */
 public class Ec2 {
 
   private AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().build();
 
+  /**
+   * Constructor
+   */
   public Ec2() {
     
   }
 
-
-  public RunInstancesResult runEc2Instance(String instanceType, String keyPair,
+  /**
+   * Runs an EC2 instance. This method is currently not used anywhere. 
+   * @param instanceType
+   * @param keyPair
+   * @param securityGroup
+   * @param iamInstanceProfile
+   * @param userData
+   * @return runInstancesResult
+   * @throws Exception
+   */
+ /* public RunInstancesResult runEc2Instance(String instanceType, String keyPair,
       String securityGroup, String iamInstanceProfile, String userData) throws Exception {
 
     try {
@@ -48,7 +67,7 @@ public class Ec2 {
     }
   }
 
-
+*/
 
 }
 

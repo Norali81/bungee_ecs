@@ -9,9 +9,17 @@ import com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancing;
 import com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancingClientBuilder;
 import tools.descartes.bungee.cloud.aws.ecs.services.Setup;
 
+/**
+ * Creates most elements needed to run the BUNGEE system analysis in AWS ECS. 
+ * 
+ * The file readme.md details which components must be created manually. 
+ * @author nora
+ *
+ */
 public class SetUpEnviornment {
 
   public static void main(String[] args) {
+    
     //Set ttl for dns in JVM to avoid "Unknown host error"
     // https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/java-dg-jvm-ttl.html
     java.security.Security.setProperty("networkaddress.cache.ttl" , "0");
@@ -24,10 +32,11 @@ public class SetUpEnviornment {
     String ecsServiceRoleArn = "arn:aws:iam::095867673188:role/ecsServiceRole";
     String awsKeyName = "aws-nora3"; // name of your .pem file in the folder ~/.ssh
     String instanceType = "t2.micro"; // instance type m1.small
-    String instanceImage = "ami-64c4871d"; //ECS optimised image for EU west 1  ami-0693ed7f 
+    String instanceImage = "ami-64c4871d"; //ECS optimised image for EU west 1 
     int numberOfDesiredTasks = 1;
     int numberOfInstances = 5;
     
+    // create class "Setup" that takes care of creating all entities needed.
     Setup setup = new Setup();
     
     // create security groups

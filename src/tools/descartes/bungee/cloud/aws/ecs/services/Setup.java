@@ -49,6 +49,13 @@ import com.amazonaws.services.identitymanagement.model.CreateRoleRequest;
 import com.amazonaws.services.identitymanagement.model.CreateRoleResult;
 import com.amazonaws.services.iot.model.Status;
 
+/**
+ * This class contains all functionality to create multiple items
+ * in the AWS interface. 
+ * @author nora
+ *
+ */
+
 public class Setup {
 
   private String instancesSecurityGroupName = "BungeeInstances";
@@ -68,12 +75,19 @@ public class Setup {
   private AmazonIdentityManagement iam = AmazonIdentityManagementClientBuilder.standard().build();
   private AmazonElasticLoadBalancing elb = AmazonElasticLoadBalancingClientBuilder.standard().build();
 
-  
+  /**
+   * Constructor
+   */
   public Setup() {
     super();
   }
 
-  // create security group
+  /**
+   * Creates a security group 
+   * @param groupName
+   * @param description
+   * @return The result object 
+   */
   private CreateSecurityGroupResult createSecurityGroup(String groupName, String description) {
     CreateSecurityGroupRequest request = new CreateSecurityGroupRequest()
         .withGroupName(groupName)
@@ -83,7 +97,9 @@ public class Setup {
     return result;
   }
   
-  // create security group for instances
+  /**
+   * Create security group for EC2 instances
+   */
   public void createInstancesSecurityGroup() {
     System.out.println("Creating security group for instances");
     
@@ -91,6 +107,7 @@ public class Setup {
         createSecurityGroup(instancesSecurityGroupName, "Security Group for Bungee VM instances")
         .getGroupId();
     
+    // Authorize port range needed for ECS
     AuthorizeSecurityGroupIngressRequest request = new AuthorizeSecurityGroupIngressRequest()
         .withFromPort(32768).withToPort(65535).withCidrIp("0.0.0.0/0")
         .withIpProtocol("TCP")
@@ -98,12 +115,14 @@ public class Setup {
     
     ec2.authorizeSecurityGroupIngress(request);
     
+    // Authorize port 8080
     request = new AuthorizeSecurityGroupIngressRequest()
         .withFromPort(8080).withToPort(8080).withCidrIp("0.0.0.0/0")
         .withIpProtocol("TCP")
         .withGroupName(this.instancesSecurityGroupName);
     ec2.authorizeSecurityGroupIngress(request);
     
+    // authorize port 22
     request = new AuthorizeSecurityGroupIngressRequest()
         .withFromPort(22).withToPort(22).withCidrIp("0.0.0.0/0")
         .withIpProtocol("TCP")
@@ -111,13 +130,16 @@ public class Setup {
     ec2.authorizeSecurityGroupIngress(request);
   }
   
-  // create security group for load balancer
+  /**
+   * Create security group for load balancer
+   */
   public void createLoadBalancerSecurityGroup() {
     
     System.out.println("Creating security group for load balancer");
     this.loadBalancerSecurityGroupId = 
         createSecurityGroup(loadBalancerSecurityGroupName, "Security Group for Bungee load balancer").getGroupId();
     
+    // authorize port 8080
     AuthorizeSecurityGroupIngressRequest request = new AuthorizeSecurityGroupIngressRequest()
         .withFromPort(8080).withToPort(8080).withCidrIp("0.0.0.0/0")
         .withIpProtocol("TCP")
@@ -126,7 +148,7 @@ public class Setup {
     System.out.println("Authorizing ingress ports");
     ec2.authorizeSecurityGroupIngress(request);
     
-    
+    // authorize port 22
     request = new AuthorizeSecurityGroupIngressRequest()
         .withFromPort(22).withToPort(22).withCidrIp("0.0.0.0/0")
         .withIpProtocol("TCP")
@@ -134,6 +156,7 @@ public class Setup {
     
     ec2.authorizeSecurityGroupIngress(request);
     
+    //authorize port 80
     request = new AuthorizeSecurityGroupIngressRequest()
         .withFromPort(80).withToPort(80).withCidrIp("0.0.0.0/0")
         .withIpProtocol("TCP")
@@ -143,8 +166,10 @@ public class Setup {
   }
 
   
-  // Create a cluster called bungeeCluster 
-  
+  /***
+   * Create a cluster called bungeeCluster
+   * @return Result object
+   */
   public CreateClusterResult createCluster() {
       CreateClusterRequest request = new CreateClusterRequest().withClusterName(clusterName);
       System.out.println("Creating Cluster");
@@ -153,14 +178,15 @@ public class Setup {
   }
   
   
-  // Call function to create application load balancer 
-  public void createApplicationLoadBalancer(String subnet1, String subnet2, String subnet3) {
-    createLoadBalancer(subnet1, subnet2, subnet3);
-    createTargetGroup();
-    createListener();
-  }
   
-  // function that creates an application load balancer
+  
+  /**
+   * Creates an application load balancer
+   * @param subnet1
+   * @param subnet2
+   * @param subnet3
+   * @return Result object
+   */
   private CreateLoadBalancerResult createLoadBalancer(String subnet1, String subnet2, String subnet3) {
     CreateLoadBalancerRequest request = new CreateLoadBalancerRequest()
         .withName(this.loadBalancerName)
@@ -174,10 +200,25 @@ public class Setup {
     return result;
   
   }
+  
+  /**
+   * Calls function to create load balancer
+   * with specific parameters
+   * @param subnet1
+   * @param subnet2
+   * @param subnet3
+   */
+  public void createApplicationLoadBalancer(String subnet1, String subnet2, String subnet3) {
+    createLoadBalancer(subnet1, subnet2, subnet3);
+    createTargetGroup();
+    createListener();
+  }
  
   
-  // Create a LoadBalancer target group
-  
+  /**
+   * Create a LoadBalancer target group
+   * @return Result object
+   */
   private CreateTargetGroupResult createTargetGroup() {
     
     DescribeVpcsRequest vpcReq = new DescribeVpcsRequest().withFilters(new Filter().withName("isDefault").withValues("true"));
@@ -201,7 +242,10 @@ public class Setup {
     
   }
   
-  // Create a listener
+  /**
+   * Create a listener
+   * @return Result object. 
+   */
   public CreateListenerResult createListener() {
     CreateListenerRequest request = new CreateListenerRequest()
         .withLoadBalancerArn(this.loadBalancerArn)
@@ -217,7 +261,15 @@ public class Setup {
     return result;
   }
   
-  /* Create a service called bungeeService */
+  /**
+   * Create a service called bungeeService 
+   * @param ecsServiceRoleArn
+   * @param desiredCount
+   * @param maximumPercent
+   * @param minimumHealthyPercent
+   * @param image
+   * @return Result object
+   */
   
   public CreateServiceResult createEcsService(String ecsServiceRoleArn, int desiredCount, int maximumPercent,
       int minimumHealthyPercent, String image) {
@@ -262,7 +314,15 @@ public class Setup {
   }
 
  
-  // create desired number of instances 
+  /**
+   * Create desired number of instances
+   * @param numInstances
+   * @param instanceType
+   * @param keyPair
+   * @param userData
+   * @param imageID
+   * @param iamInstanceProfile
+   */
   public void createInstances(int numInstances, String instanceType, String keyPair,
       String userData, String imageID, String iamInstanceProfile) {
 
@@ -279,6 +339,7 @@ public class Setup {
           .getGroupId()
           .toString());
 
+      // run instance
       runInstancesRequest.withImageId(imageID) // ami-0693ed7f ECS optimized image for eu-west-1
           .withInstanceType(instanceType)
           .withMinCount(1)

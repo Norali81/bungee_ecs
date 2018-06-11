@@ -7,6 +7,14 @@ import com.amazonaws.services.ecs.model.DescribeServicesResult;
 import com.amazonaws.services.ecs.model.UpdateServiceRequest;
 import com.amazonaws.services.ecs.model.UpdateServiceResult;
 
+/**
+ * Creates an object "AwsEcsService" which is capable of
+ * performing operations on an AWS ECS service.
+ * It can get and update the desired task count of the service
+ * as well as getting the number of tasks running. 
+ * @author nora
+ *
+ */
 public class AwsEcsService {
   
   private AwsEcs ecs = new AwsEcs();
@@ -23,7 +31,11 @@ public class AwsEcsService {
     this.ecsServiceName = ecsServiceName;
   }
   
-  
+  /**
+   * Get information about a service by providing cluster and service name.
+   * The "describeServicesResult" contains various information about the service.
+   * @return describeServicesResult. An object that contains information about a service
+   */
   private DescribeServicesResult describeEcsService() {
       DescribeServicesRequest request = new DescribeServicesRequest()
           .withCluster(this.ecsClusterName)
@@ -33,6 +45,10 @@ public class AwsEcsService {
   }
   
  
+  /**
+   * Get the desired task count of the service
+   * @return desiredCount
+   */
   public int getDesiredCount() {
     DescribeServicesResult result = describeEcsService();
     if (result.getServices().size() > 1) {
@@ -46,6 +62,10 @@ public class AwsEcsService {
         .getDesiredCount();
   }
 
+  /**
+   * Get the number of running tasks a service has
+   * @return runningCount
+   */
   public int getRunningCount() {
 
     try {
@@ -80,6 +100,8 @@ public class AwsEcsService {
   /*
    * Getters and Setters
    */
+  
+
   public AwsEcs getEcs() {
     return ecs;
   }
