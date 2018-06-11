@@ -34,7 +34,7 @@ public class AwsEcsManagement implements CloudInfo, CloudManagement {
 
   @Override
   public int getNumberOfResources(String ip) {
-    //System.out.println("Ecs Managment getting number of resources");
+    //System.out.println("Ecs Management getting number of resources");
     int numberOfResources = service.getRunningCount();
     return numberOfResources;
   }

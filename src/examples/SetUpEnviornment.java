@@ -26,6 +26,7 @@ public class SetUpEnviornment {
     String instanceType = "t2.micro"; // instance type m1.small
     String instanceImage = "ami-64c4871d"; //ECS optimised image for EU west 1  ami-0693ed7f 
     int numberOfDesiredTasks = 1;
+    int numberOfInstances = 5;
     
     Setup setup = new Setup();
     
@@ -46,7 +47,7 @@ public class SetUpEnviornment {
   
     
     // Run instances
-    setup.createInstances(1, instanceType, awsKeyName,
+    setup.createInstances(numberOfInstances, instanceType, awsKeyName,
         // This is a base 64 encoded shell script to set up the container instances
         "IyEvYmluL3NoDQoNCg0KRklMRT0iL2V0Yy9lY3MvZWNzLmNvbmZpZyINCg0KZWNobyAiRUNTX0NMVVNURVI9QnVuZ2VlQ2x1c3RlciIgPiAkRklMRQ0KDQpzdWRvIHl1bSAteSBlcmFzZSBudHAqDQoNCnN1ZG8geXVtIC15IGluc3RhbGwgY2hyb255DQoNCnN1ZG8gc2VydmljZSBjaHJvbnlkIHN0YXJ0DQo=",
         instanceImage , "ecsInstanceRole");
