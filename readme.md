@@ -10,7 +10,7 @@
 
 
 ## AWS account
-### Ensure AWS SDK can access account
+#### Ensure AWS SDK can access account
 * Create a user in [AWS IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html) .
 * Give desired permissions to user. 
 * Ensure the user's credentials are accessible to the JAVA SDK following the [AWS instructions](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html) . 
@@ -19,7 +19,7 @@
  * Store the private key (.pem) in your ~/.ssh directory. This will only be used in case you have to ssh into one of your EC2 instances for troubleshooting. 
  * Take note of the name of this newly created key. 
 
-###Create AWS IAM roles
+####Create AWS IAM roles
 Create the following roles (instructions [here](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-service.html) here):
 
 Role name | Policy
@@ -31,14 +31,14 @@ ecsAutoscaleRole | AmazonEC2ContainerServiceAutoscaleRole
 
 Take note of the ARN of the ecsServiceRole.
 
-## Upload load processor application to ECR
+### Upload load processor application to ECR
 * Put your load processing application inside a Docker container and ensure it runs correctly. 
 * Upload your container image to the Elastic Container Registry following AWS's [instructions](https://docs.aws.amazon.com/AmazonECR/latest/userguide/what-is-ecr.html) instructions. 
 * Take note of the Container Registry URL pointing to your uploaded docker image. 
 
 ## Configure BUNGEE
 
-### Setup script
+#### Setup script
 * Eclipse: In the package "tools.descartes.bungee.cloud.aws.ecs.management" open the file "SetUpEnviornment.java".
 * Replace the following variables with those matching your own account: 
 	* Subnet 1 - 3 &rarr; Replace with your subnet IDs.
@@ -61,6 +61,18 @@ The script should now create  the following:
 * Create a container definition with 400 CPU units reservation. 
 * Create a task definition with  with 450 CPU units reserved and 450MB of RAM. 
 * Create the number of EC2 instances specified with the variable numberOfInstances.
-	
+
+## Configure BUNGEE
+Configure BUNGEE by editing the property files according to the instructions in the [quickstart guide](https://se.informatik.uni-wuerzburg.de/fileadmin/10030200/BUNGEE-HowTo.pdf):
+
+* Replace the hostname in  the file "host.prop" with the hostname of the application load balancer that was created in your account. 
+* Ensure the JMeter path is correct in jmeter.prop.
+* Adjust request.prop and measurement.prop as needed. 
+
+Now you should be all set for running the system analysis phase. Once this phase is concluded, you need to set up autoscaling for the ECS service and the EC2 instances. Refer to AWS's documentation for those steps. 
+
+
+
+
 
  
